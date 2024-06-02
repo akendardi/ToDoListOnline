@@ -1,12 +1,10 @@
 package com.example.todolistonline.presentation.registration
 
-import android.content.Context
-import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.todolistonline.domain.RegistrationState
+import com.example.todolistonline.domain.states.RegistrationState
 import com.example.todolistonline.domain.use_cases.firebase_use_cases.CreateAccountUseCase
 import com.example.todolistonline.mapper.MapperPresentation
 import com.google.firebase.auth.FirebaseAuth
@@ -29,12 +27,10 @@ class RegistrationViewModel @Inject constructor() : ViewModel() {
         get() = _registerResult
 
     fun createAccount(email: String, password: String, name: String) {
-        Log.d("Create VM", "Start")
         _registerResult.value = RegistrationState.Loading
         viewModelScope.launch {
             val result = createAccountUseCase.invoke(email, password, name)
             _registerResult.value = result
-            Log.d("ResuultVm", result.toString())
         }
     }
 

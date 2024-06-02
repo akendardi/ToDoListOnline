@@ -1,4 +1,4 @@
-package com.example.todolistonline.domain
+package com.example.todolistonline.domain.states
 
 sealed class RegistrationState {
     data object Loading: RegistrationState()

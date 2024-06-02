@@ -5,7 +5,9 @@ import com.example.todolistonline.data.repositories.FirebaseRepositoryImpl
 import com.example.todolistonline.di.modules.FirebaseModule
 import com.example.todolistonline.di.modules.RepositoriesModule
 import com.example.todolistonline.di.modules.ViewModelModule
+import com.example.todolistonline.presentation.login.LoginActivity
 import com.example.todolistonline.presentation.registration.RegistrationActivity
+import com.example.todolistonline.presentation.reset_password.ResetPasswordActivity
 import dagger.BindsInstance
 import dagger.Component
 
@@ -19,6 +21,10 @@ interface AppComponent {
     fun inject(activity: RegistrationActivity)
 
     fun inject(repositoryImpl: FirebaseRepositoryImpl)
+
+    fun inject(resetPasswordActivity: ResetPasswordActivity)
+
+    fun inject(loginActivity: LoginActivity)
 
     @Component.Factory
     interface Factory {

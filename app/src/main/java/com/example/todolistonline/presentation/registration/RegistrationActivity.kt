@@ -10,7 +10,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import com.example.todolistonline.ToDoListOnlineApp
 import com.example.todolistonline.databinding.ActivityRegistrationBinding
-import com.example.todolistonline.domain.RegistrationState
+import com.example.todolistonline.domain.states.RegistrationState
 import com.example.todolistonline.presentation.ViewModelFactory
 import javax.inject.Inject
 
@@ -37,9 +37,9 @@ class RegistrationActivity : AppCompatActivity() {
         binding.buttonRegistration.setOnClickListener {
             checkEditText()
             Log.d("Говноо", "buttonRegistration")
-            val name = binding.etLogin.text.toString()
+            val name = binding.etLogin.text.toString().trim()
             val email = binding.etEmail.text.toString().trim()
-            val password = binding.etPassword.text.toString()
+            val password = binding.etPassword.text.toString().trim()
             Log.d("Registration Tag", "$name $email $password")
             viewModel.createAccount(email, password, name)
         }
@@ -48,30 +48,33 @@ class RegistrationActivity : AppCompatActivity() {
 
     private fun observeViewModel() {
         viewModel.registerResult.observe(this) {
-            Log.d("Resuult", it.toString())
             when (it) {
                 is RegistrationState.Loading -> {
                     binding.progressBar.visibility = View.VISIBLE
+                    binding.blackBackground.visibility = View.VISIBLE
                 }
 
                 is RegistrationState.Error -> {
                     binding.progressBar.visibility = View.GONE
                     Toast.makeText(this, it.error.toString(), Toast.LENGTH_SHORT).show()
-
+                    binding.blackBackground.visibility = View.GONE
                 }
 
                 is RegistrationState.Successful -> {
                     binding.progressBar.visibility = View.GONE
+                    binding.blackBackground.visibility = View.GONE
                 }
 
                 is RegistrationState.InvalidEmail -> {
                     Toast.makeText(this, "Хуйня емаил", Toast.LENGTH_SHORT).show()
                     binding.progressBar.visibility = View.GONE
+                    binding.blackBackground.visibility = View.GONE
                 }
 
                 is RegistrationState.UserCollision -> {
                     Toast.makeText(this, "Уже есть", Toast.LENGTH_SHORT).show()
                     binding.progressBar.visibility = View.GONE
+                    binding.blackBackground.visibility = View.GONE
                 }
             }
         }
@@ -105,6 +108,7 @@ class RegistrationActivity : AppCompatActivity() {
         }
         return flag
     }
+
 
     companion object {
         fun newIntent(context: Context): Intent {
