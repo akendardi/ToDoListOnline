@@ -5,6 +5,8 @@ import com.example.todolistonline.di.DaggerAppComponent
 
 class ToDoListOnlineApp : Application() {
     val component by lazy {
-        DaggerAppComponent.factory().create()
+        DaggerAppComponent.factory().create(applicationContext, this)
     }
+
+
 }

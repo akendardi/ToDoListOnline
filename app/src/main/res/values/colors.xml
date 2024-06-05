@@ -2,5 +2,17 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="myRed">#E84A5F</color>
+    <color name="myPink">#F1929F</color>
+    <color name="uncheckedGreen">#A8E4A0</color>
+    <color name="uncheckedGreenBorder">#44944A</color>
+
+    <color name="checkbox_checked_color">#FF0000</color>
+    <color name="checkbox_unchecked_color">#FFFFFF</color>
+    <color name="checkbox_border_color">#000000</color>
+    <color name="checkbox_mark_color">#000000</color>
+
+
+    <color name="pastelPink">#f9d2d7</color>
     <color name="mtrl_textinput_default_box_stroke_color" tools:override="true">#F1929F</color>
 </resources>
