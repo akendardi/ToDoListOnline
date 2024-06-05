@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.example.todolistonline.di.ViewModelKey
 import com.example.todolistonline.presentation.ViewModelFactory
 import com.example.todolistonline.presentation.login.LoginViewModel
+import com.example.todolistonline.presentation.main.MainViewModel
 import com.example.todolistonline.presentation.registration.RegistrationViewModel
 import com.example.todolistonline.presentation.reset_password.ResetPasswordViewModel
 import dagger.Binds
@@ -28,6 +29,11 @@ interface ViewModelModule {
     @IntoMap
     @ViewModelKey(LoginViewModel::class)
     fun provideLoginViewModel(loginViewModel: LoginViewModel): ViewModel
+
+    @Binds
+    @IntoMap
+    @ViewModelKey(MainViewModel::class)
+    fun provideMainViewModel(mainViewModel: MainViewModel): ViewModel
 
     @Binds
     fun bindViewModelFactory(factory: ViewModelFactory): ViewModelProvider.Factory

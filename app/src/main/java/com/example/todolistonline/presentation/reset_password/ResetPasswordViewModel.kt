@@ -7,7 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.todolistonline.domain.states.ResetPasswordState
 import com.example.todolistonline.domain.use_cases.firebase_use_cases.ResetPasswordUseCase
-import com.example.todolistonline.mapper.MapperPresentation
+import com.example.todolistonline.mapper.Mapper
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -17,7 +17,7 @@ class ResetPasswordViewModel @Inject constructor() : ViewModel() {
     lateinit var resetPassword: ResetPasswordUseCase
 
     @Inject
-    lateinit var mapperPresentation: MapperPresentation
+    lateinit var mapper: Mapper
 
     private val _result = MutableLiveData<ResetPasswordState>()
     val result: LiveData<ResetPasswordState>
@@ -37,6 +37,6 @@ class ResetPasswordViewModel @Inject constructor() : ViewModel() {
     }
 
     fun dpToPx(dp: Int): Int {
-        return mapperPresentation.dpToPx(dp)
+        return mapper.dpToPx(dp)
     }
 }

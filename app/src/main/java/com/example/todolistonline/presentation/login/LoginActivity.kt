@@ -1,5 +1,7 @@
 package com.example.todolistonline.presentation.login
 
+import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
@@ -9,9 +11,9 @@ import com.example.todolistonline.ToDoListOnlineApp
 import com.example.todolistonline.databinding.ActivityLoginBinding
 import com.example.todolistonline.domain.states.LoginState
 import com.example.todolistonline.presentation.ViewModelFactory
+import com.example.todolistonline.presentation.main.MainActivity
 import com.example.todolistonline.presentation.registration.RegistrationActivity
 import com.example.todolistonline.presentation.reset_password.ResetPasswordActivity
-import net.yslibrary.android.keyboardvisibilityevent.KeyboardVisibilityEvent
 import javax.inject.Inject
 
 class LoginActivity : AppCompatActivity() {
@@ -78,11 +80,10 @@ class LoginActivity : AppCompatActivity() {
                     loading(true)
                 }
                 LoginState.Successful -> {
-                    Toast.makeText(
-                        this,
-                        "Заебись",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    loading(false)
+                    val intent = MainActivity.newIntent(this)
+                    startActivity(intent)
+
                 }
 
             }
@@ -128,6 +129,12 @@ class LoginActivity : AppCompatActivity() {
             binding.etPasswordL.error = null
         }
         return flag
+    }
+
+    companion object{
+        fun newIntent(context: Context): Intent {
+            return Intent(context, LoginActivity::class.java)
+        }
     }
 
 

@@ -6,7 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.todolistonline.domain.states.LoginState
 import com.example.todolistonline.domain.use_cases.firebase_use_cases.LoginInAccountUseCase
-import com.example.todolistonline.mapper.MapperPresentation
+import com.example.todolistonline.mapper.Mapper
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -24,7 +24,7 @@ class LoginViewModel @Inject constructor() : ViewModel() {
     lateinit var loginInAccountUseCase: LoginInAccountUseCase
 
     @Inject
-    lateinit var mapperPresentation: MapperPresentation
+    lateinit var mapper: Mapper
 
     fun login(email: String, password: String){
         _loginResult.value = LoginState.Loading
@@ -35,7 +35,7 @@ class LoginViewModel @Inject constructor() : ViewModel() {
     }
 
     fun dpToPx(dp: Int): Int{
-        return mapperPresentation.dpToPx(dp)
+        return mapper.dpToPx(dp)
     }
 
 }
