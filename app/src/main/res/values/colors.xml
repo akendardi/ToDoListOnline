@@ -4,10 +4,15 @@
     <color name="white">#FFFFFFFF</color>
     <color name="myRed">#E84A5F</color>
     <color name="myPink">#F1929F</color>
-    <color name="uncheckedGreen">#A8E4A0</color>
-    <color name="uncheckedGreenBorder">#44944A</color>
+    <color name="lowDone">#A8E4A0</color>
+    <color name="mediumDone">#FFB841</color>
+    <color name="highDone">#FF496C</color>
 
-    <color name="checkbox_checked_color">#FF0000</color>
+    <color name="lowPriorityColor">#44944A</color>
+    <color name="mediumPriorityColor">#ffa500</color>
+    <color name="highPriorityColor">#FF0000</color>
+    <color name="defaultPriorityColor">#808080</color>
+
     <color name="checkbox_unchecked_color">#FFFFFF</color>
     <color name="checkbox_border_color">#000000</color>
     <color name="checkbox_mark_color">#000000</color>

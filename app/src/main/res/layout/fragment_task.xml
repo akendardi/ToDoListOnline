@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     app:cardCornerRadius="10dp"
-    tools:context=".presentation.main.fragments.TaskFragment">
+    tools:context=".presentation.main.fragments.task_fragment.TaskFragment">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -59,23 +59,27 @@
         </com.google.android.material.textfield.TextInputLayout>
 
         <RadioGroup
+            android:id="@+id/radio_group"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="horizontal">
 
             <RadioButton
+                android:id="@+id/rb_easy"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Низкий" />
 
             <RadioButton
+                android:id="@+id/rb_medium"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Средний" />
 
             <RadioButton
+                android:id="@+id/rb_hard"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"

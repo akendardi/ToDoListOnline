@@ -1,59 +1,135 @@
 package com.example.todolistonline.presentation.main.fragments
 
 import android.os.Bundle
-import androidx.fragment.app.Fragment
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import com.example.todolistonline.R
+import android.widget.Toast
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.ItemTouchHelper
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.example.todolistonline.ToDoListOnlineApp
+import com.example.todolistonline.databinding.FragmentTodayBinding
+import com.example.todolistonline.databinding.FragmentTomorrowBinding
+import com.example.todolistonline.domain.Task
+import com.example.todolistonline.presentation.ViewModelFactory
+import com.example.todolistonline.presentation.main.MainViewModel
+import com.example.todolistonline.presentation.main.fragments.task_fragment.TaskFragment
+import com.example.todolistonline.presentation.main.recycler_view.OnItemClickListener
+import com.example.todolistonline.presentation.main.recycler_view.TasksAdapter
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-// TODO: Rename parameter arguments, choose names that match
-// the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-private const val ARG_PARAM1 = "param1"
-private const val ARG_PARAM2 = "param2"
 
-/**
- * A simple [Fragment] subclass.
- * Use the [TomorrowFragment.newInstance] factory method to
- * create an instance of this fragment.
- */
-class TomorrowFragment : Fragment() {
-    // TODO: Rename and change types of parameters
-    private var param1: String? = null
-    private var param2: String? = null
+class TomorrowFragment : Fragment(), OnItemClickListener {
+
+
+
+    private var _binding: FragmentTomorrowBinding? = null
+    private val binding get() = _binding!!
+
+    @Inject
+    lateinit var viewModelFactory: ViewModelFactory
+
+    private lateinit var tasksAdapter: TasksAdapter
+
+
+    private val viewModel: MainViewModel by activityViewModels { viewModelFactory }
+
+    private val component by lazy {
+        (activity?.application as ToDoListOnlineApp).component
+    }
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        component.inject(this)
         super.onCreate(savedInstanceState)
         arguments?.let {
-            param1 = it.getString(ARG_PARAM1)
-            param2 = it.getString(ARG_PARAM2)
+
         }
     }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_tomorrow, container, false)
+    ): View {
+        _binding = FragmentTomorrowBinding.inflate(inflater, container, false)
+        return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        loadData()
+        lifecycleScope.launch {
+            viewModel.getTomorrowTasks()
+        }
+        setupSwipeToDelete()
+        setupRecyclerView()
+
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+    }
+
+    private fun setupSwipeToDelete() {
+        val itemTouchHelperCallback = object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
+            override fun onMove(
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                target: RecyclerView.ViewHolder
+            ): Boolean {
+                return false
+            }
+
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                val position = viewHolder.adapterPosition
+                val task = tasksAdapter.currentList[position]
+                viewModel.deleteTask(task)
+                Toast.makeText(context, "Задача удалена", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        val itemTouchHelper = ItemTouchHelper(itemTouchHelperCallback)
+        itemTouchHelper.attachToRecyclerView(binding.recyclerView)
+    }
+
+    private fun loadData() {
+        viewModel.tomorrowList.observe(viewLifecycleOwner){
+            Log.d("MYTAG", "OBSERVE TOMORROW ${it.size}")
+            tasksAdapter.submitList(it)
+        }
+    }
+
+    private fun setupRecyclerView() {
+        tasksAdapter = TasksAdapter(this)
+        binding.recyclerView.apply {
+            adapter = tasksAdapter
+            layoutManager = LinearLayoutManager(context)
+        }
+    }
+
+    override fun onItemClick(task: Task) {
+        val fragment = TaskFragment.newInstance(task)
+        fragment.show(parentFragmentManager, "TaskDialogFragment")
+    }
+
+    override fun onItemStateChanged(task: Task) {
+        viewModel.updateTask(task)
     }
 
     companion object {
-        /**
-         * Use this factory method to create a new instance of
-         * this fragment using the provided parameters.
-         *
-         * @param param1 Parameter 1.
-         * @param param2 Parameter 2.
-         * @return A new instance of fragment TomorrowFragment.
-         */
-        // TODO: Rename and change types and number of parameters
+
         @JvmStatic
-        fun newInstance(param1: String, param2: String) =
-            TomorrowFragment().apply {
+        fun newInstance() =
+            TodayFragment().apply {
                 arguments = Bundle().apply {
-                    putString(ARG_PARAM1, param1)
-                    putString(ARG_PARAM2, param2)
                 }
             }
     }

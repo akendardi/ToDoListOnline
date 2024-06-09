@@ -3,6 +3,9 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="RECEIVE_BOOT_COMPLETED"/>
+
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name=".ToDoListOnlineApp"
@@ -44,6 +47,7 @@
             android:windowSoftInputMode="adjustResize">
 
         </activity>
+        <receiver android:name=".StartAtMidnightReceiver" />
     </application>
 
 </manifest>

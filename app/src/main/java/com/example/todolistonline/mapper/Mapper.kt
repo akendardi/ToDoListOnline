@@ -3,8 +3,7 @@ package com.example.todolistonline.mapper
 import android.content.Context
 import android.util.TypedValue
 import com.example.todolistonline.domain.Task
-import com.example.todolistonline.data.entities.TaskLocalDbModel
-import com.example.todolistonline.data.entities.TaskRemoteDbModel
+import com.example.todolistonline.data.entities.TaskDbModel
 import javax.inject.Inject
 
 class Mapper @Inject constructor(
@@ -19,8 +18,8 @@ class Mapper @Inject constructor(
         ).toInt()
     }
 
-    fun entityToDbModel(task: Task): TaskLocalDbModel {
-        return TaskLocalDbModel(
+    fun entityToDbModel(task: Task): TaskDbModel {
+        return TaskDbModel(
             task.id,
             task.title,
             task.priority,
@@ -29,7 +28,7 @@ class Mapper @Inject constructor(
         )
     }
 
-    fun localDbModelToEntity(task: TaskLocalDbModel):Task{
+    fun dbModelToEntity(task: TaskDbModel):Task{
         return Task(
             task.id,
             task.title,
@@ -39,25 +38,7 @@ class Mapper @Inject constructor(
         )
     }
 
-    fun remoteToLocal(task: TaskRemoteDbModel): TaskLocalDbModel {
-        return TaskLocalDbModel(
-            task.id,
-            task.title,
-            task.priority,
-            task.time,
-            task.state
-        )
-    }
 
-    fun localToRemote(task: TaskLocalDbModel): TaskRemoteDbModel {
-        return TaskRemoteDbModel(
-            task.id,
-            task.title,
-            task.priority,
-            task.time,
-            task.state
-        )
-    }
 
 
 

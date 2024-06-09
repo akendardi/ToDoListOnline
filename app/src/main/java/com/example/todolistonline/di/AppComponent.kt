@@ -11,7 +11,9 @@ import com.example.todolistonline.di.modules.ViewModelModule
 import com.example.todolistonline.presentation.hello_activity.HelloActivity
 import com.example.todolistonline.presentation.login.LoginActivity
 import com.example.todolistonline.presentation.main.MainActivity
-import com.example.todolistonline.presentation.main.fragments.TaskFragment
+import com.example.todolistonline.presentation.main.fragments.TodayFragment
+import com.example.todolistonline.presentation.main.fragments.TomorrowFragment
+import com.example.todolistonline.presentation.main.fragments.task_fragment.TaskFragment
 import com.example.todolistonline.presentation.registration.RegistrationActivity
 import com.example.todolistonline.presentation.reset_password.ResetPasswordActivity
 import dagger.BindsInstance
@@ -29,6 +31,8 @@ import javax.inject.Singleton
 interface AppComponent {
     fun inject(activity: RegistrationActivity)
     fun inject(fragment: TaskFragment)
+    fun inject(todayFragment: TodayFragment)
+    fun inject(tomorrowFragment: TomorrowFragment)
 
     fun inject(repositoryImpl: FirebaseRepositoryImpl)
 
