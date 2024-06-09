@@ -51,7 +51,7 @@ class HelloActivity : AppCompatActivity() {
             Log.d("Login", "Залогинился")
             lifecycleScope.launch {
                 delay(2000)
-                startActivity(MainActivity.newIntent(this@HelloActivity))
+                startActivity(MainActivity.newIntent(this@HelloActivity, false))
                 finish()
             }
 

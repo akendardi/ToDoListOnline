@@ -1,5 +1,8 @@
 package com.example.todolistonline.data.repositories
 
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import com.example.todolistonline.domain.FirebaseRepository
 import com.example.todolistonline.domain.states.LoginState
 import com.example.todolistonline.domain.states.RegistrationState
@@ -14,7 +17,9 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
-class FirebaseRepositoryImpl @Inject constructor(private val auth: FirebaseAuth) :
+class FirebaseRepositoryImpl @Inject constructor(
+    private val auth: FirebaseAuth,
+    private val context: Context) :
     FirebaseRepository {
 
 
@@ -68,7 +73,19 @@ class FirebaseRepositoryImpl @Inject constructor(private val auth: FirebaseAuth)
         }
     }
 
+    override fun checkConnection(): Boolean {
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = connectivityManager.activeNetwork
+        val networkCapabilities = connectivityManager.getNetworkCapabilities(network)
+        return networkCapabilities != null &&
+                (networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                        networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
+                        networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET))
+    }
+
+
+
     override fun logoutOfAccount() {
-        TODO("Not yet implemented")
+        auth.signOut()
     }
 }

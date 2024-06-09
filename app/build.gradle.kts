@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsKotlinAndroid)
+    id ("kotlin-parcelize")
     id("kotlin-kapt")
     id("com.google.gms.google-services")
 }
@@ -67,6 +68,15 @@ dependencies {
     implementation ("androidx.room:room-ktx:2.5.0")
     kapt ("androidx.room:room-compiler:2.5.0")
     implementation ("androidx.room:room-testing:2.5.1")
+
+
+    implementation ("androidx.core:core-ktx:1.6.0")
+    implementation ("org.jetbrains.kotlin:kotlin-parcelize-runtime:1.6.0")
+    implementation ("androidx.fragment:fragment-ktx:1.3.5")
+
+
+    val work_version = "2.7.0"
+    implementation ("androidx.work:work-runtime-ktx:$work_version")
 
 
 

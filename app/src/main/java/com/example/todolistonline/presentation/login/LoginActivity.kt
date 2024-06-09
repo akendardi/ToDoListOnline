@@ -81,7 +81,7 @@ class LoginActivity : AppCompatActivity() {
                 }
                 LoginState.Successful -> {
                     loading(false)
-                    val intent = MainActivity.newIntent(this)
+                    val intent = MainActivity.newIntent(this, true)
                     startActivity(intent)
 
                 }
@@ -103,8 +103,8 @@ class LoginActivity : AppCompatActivity() {
     private fun buttonClickListener(){
         binding.buttonLogin.setOnClickListener {
             if (checkEditText()){
-                val email = binding.etEmail.text.toString()
-                val password = binding.etPassword.text.toString()
+                val email = binding.etEmail.text.toString().trim()
+                val password = binding.etPassword.text.toString().trim()
                 viewModel.login(email, password)
             }
         }

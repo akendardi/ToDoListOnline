@@ -9,4 +9,6 @@ interface FirebaseRepository {
     suspend fun loginInAccount(email: String, password: String): LoginState
     suspend fun resetPassword(email: String): ResetPasswordState
     fun logoutOfAccount()
+
+    fun checkConnection(): Boolean
 }
