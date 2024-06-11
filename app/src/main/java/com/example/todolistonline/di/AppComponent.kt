@@ -2,18 +2,20 @@ package com.example.todolistonline.di
 
 import android.app.Application
 import android.content.Context
+import com.example.todolistonline.ToDoListOnlineApp
 import com.example.todolistonline.data.repositories.FirebaseRepositoryImpl
 import com.example.todolistonline.di.modules.AppSubcomponent
 import com.example.todolistonline.di.modules.DatabaseModule
 import com.example.todolistonline.di.modules.FirebaseModule
 import com.example.todolistonline.di.modules.RepositoriesModule
 import com.example.todolistonline.di.modules.ViewModelModule
+import com.example.todolistonline.di.modules.WorkerModule
 import com.example.todolistonline.presentation.hello_activity.HelloActivity
 import com.example.todolistonline.presentation.login.LoginActivity
 import com.example.todolistonline.presentation.main.MainActivity
 import com.example.todolistonline.presentation.main.fragments.TodayFragment
 import com.example.todolistonline.presentation.main.fragments.TomorrowFragment
-import com.example.todolistonline.presentation.main.fragments.task_fragment.TaskFragment
+import com.example.todolistonline.presentation.main.fragments.TaskFragment
 import com.example.todolistonline.presentation.registration.RegistrationActivity
 import com.example.todolistonline.presentation.reset_password.ResetPasswordActivity
 import dagger.BindsInstance
@@ -24,11 +26,14 @@ import javax.inject.Singleton
     modules = [FirebaseModule::class,
         RepositoriesModule::class,
         ViewModelModule::class,
-        DatabaseModule::class
+        DatabaseModule::class,
+        WorkerModule::class
     ]
 )
 @Singleton
 interface AppComponent {
+
+    fun inject(application: ToDoListOnlineApp)
     fun inject(activity: RegistrationActivity)
     fun inject(fragment: TaskFragment)
     fun inject(todayFragment: TodayFragment)

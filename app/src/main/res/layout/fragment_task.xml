@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     app:cardCornerRadius="10dp"
-    tools:context=".presentation.main.fragments.task_fragment.TaskFragment">
+    tools:context=".presentation.main.fragments.TaskFragment">
 
     <LinearLayout
         android:layout_width="match_parent"

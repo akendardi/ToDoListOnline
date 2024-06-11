@@ -35,20 +35,18 @@ class HelloActivity : AppCompatActivity() {
         component.inject(this)
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
+        startAnimation()
+        updateUI(auth.currentUser)
 
+    }
+
+    private fun startAnimation(){
         val rotateAnimation = AnimationUtils.loadAnimation(this, R.anim.rotate_iv)
         binding.iv.startAnimation(rotateAnimation)
-
-        val currUser = auth.currentUser
-        Log.d("current_user", currUser.toString())
-        updateUI(currUser)
-
     }
 
     private fun updateUI(user: FirebaseUser?) {
         if (user != null) {
-            // User is signed in, redirect to the main screen of the app
-            Log.d("Login", "Залогинился")
             lifecycleScope.launch {
                 delay(2000)
                 startActivity(MainActivity.newIntent(this@HelloActivity, false))
@@ -57,7 +55,6 @@ class HelloActivity : AppCompatActivity() {
 
 
         } else {
-            Log.d("Login", "Не Залогинился")
             lifecycleScope.launch {
                 delay(2000)
                 startActivity(LoginActivity.newIntent(this@HelloActivity))

@@ -4,9 +4,13 @@ import com.example.todolistonline.data.entities.TaskDbModel
 
 interface TaskRepository {
 
+    suspend fun transferTasks()
+
     suspend fun fetchTasksFromFirebase()
-    suspend fun insertTask(task: TaskDbModel): Boolean
-    suspend fun deleteTask(task: TaskDbModel)
+    suspend fun insertTaskLocalDb(task: TaskDbModel): Long
+    suspend fun insertTaskFirebase(task: TaskDbModel, id: Long)
+    suspend fun deleteTaskLocalDb(task: TaskDbModel)
+    suspend fun deleteTaskFirebase(task: TaskDbModel)
 
     suspend fun getTodayTasks(): List<Task>
 
@@ -17,5 +21,6 @@ interface TaskRepository {
 
     suspend fun deleteAll()
 
-    suspend fun updateTask(task: TaskDbModel)
+    suspend fun updateTaskLocalDb(task: TaskDbModel)
+    suspend fun updateTaskFirebase(task: TaskDbModel)
 }

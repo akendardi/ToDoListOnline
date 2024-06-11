@@ -17,7 +17,6 @@ import com.example.todolistonline.databinding.FragmentTodayBinding
 import com.example.todolistonline.domain.Task
 import com.example.todolistonline.presentation.ViewModelFactory
 import com.example.todolistonline.presentation.main.MainViewModel
-import com.example.todolistonline.presentation.main.fragments.task_fragment.TaskFragment
 import com.example.todolistonline.presentation.main.recycler_view.OnItemClickListener
 import com.example.todolistonline.presentation.main.recycler_view.TasksAdapter
 import kotlinx.coroutines.launch
@@ -46,9 +45,6 @@ class TodayFragment : Fragment(), OnItemClickListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         component.inject(this)
         super.onCreate(savedInstanceState)
-        arguments?.let {
-
-        }
     }
 
     override fun onCreateView(
@@ -97,7 +93,6 @@ class TodayFragment : Fragment(), OnItemClickListener {
                 val position = viewHolder.adapterPosition
                 val task = tasksAdapter.currentList[position]
                 viewModel.deleteTask(task)
-                Toast.makeText(context, "Задача удалена", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -116,17 +111,12 @@ class TodayFragment : Fragment(), OnItemClickListener {
     override fun onItemClick(task: Task) {
         val fragment = TaskFragment.newInstance(task)
         fragment.show(parentFragmentManager, "TaskDialogFragment")
-        Toast.makeText(context, "Кликнул", Toast.LENGTH_SHORT).show()
     }
 
     override fun onItemStateChanged(task: Task) {
         Log.d("MYTAG", "onItemStateChanged $task")
         viewModel.updateTask(task)
-        // Дополнительно убедимся, что элемент обновлен
-        val position = tasksAdapter.currentList.indexOf(task)
-        if (position != -1) {
-            tasksAdapter.notifyItemChanged(position)
-        }
+
     }
 
     companion object {

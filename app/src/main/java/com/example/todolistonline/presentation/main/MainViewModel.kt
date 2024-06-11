@@ -1,26 +1,37 @@
 package com.example.todolistonline.presentation.main
 
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.example.todolistonline.domain.Task
 import com.example.todolistonline.domain.TaskRepository
 import com.example.todolistonline.domain.TaskState
 import com.example.todolistonline.domain.use_cases.firebase_use_cases.LogoutFromAccountUseCase
 import com.example.todolistonline.domain.use_cases.tasks_use_cases.CheckConnectionUseCase
 import com.example.todolistonline.domain.use_cases.tasks_use_cases.DeleteAllUseCase
-import com.example.todolistonline.domain.use_cases.tasks_use_cases.DeleteTaskUseCase
+import com.example.todolistonline.domain.use_cases.tasks_use_cases.DeleteTaskFirebaseUseCase
+import com.example.todolistonline.domain.use_cases.tasks_use_cases.DeleteTaskLocalDbUseCase
 import com.example.todolistonline.domain.use_cases.tasks_use_cases.FetchTasksFromFirebaseUseCase
 import com.example.todolistonline.domain.use_cases.tasks_use_cases.GetTodayTasksUseCase
 import com.example.todolistonline.domain.use_cases.tasks_use_cases.GetTomorrowTasksUseCase
+import com.example.todolistonline.domain.use_cases.tasks_use_cases.InsertTaskFirebaseUseCase
+import com.example.todolistonline.domain.use_cases.tasks_use_cases.InsertTaskLocalDbUseCase
 import com.example.todolistonline.domain.use_cases.tasks_use_cases.SynchronizeDataUseCase
-import com.example.todolistonline.domain.use_cases.tasks_use_cases.UpdateTaskUseCase
+import com.example.todolistonline.domain.use_cases.tasks_use_cases.TransferTasksUseCase
+import com.example.todolistonline.domain.use_cases.tasks_use_cases.UpdateTaskFirebaseUseCase
+import com.example.todolistonline.domain.use_cases.tasks_use_cases.UpdateTaskLocalDbUseCase
 import com.example.todolistonline.mapper.Mapper
-import kotlinx.coroutines.Dispatchers
+import com.example.todolistonline.workers.NotificationWorker
+import com.example.todolistonline.workers.TaskTransferWorker
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import java.util.Calendar
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 class MainViewModel @Inject constructor(
@@ -29,10 +40,16 @@ class MainViewModel @Inject constructor(
     private val fetchTasksFromFirebaseUseCase: FetchTasksFromFirebaseUseCase,
     private val synchronizeDataUseCase: SynchronizeDataUseCase,
     private val deleteAllUseCase: DeleteAllUseCase,
-    private val deleteTaskUseCase: DeleteTaskUseCase,
+    private val deleteTaskLocalDbUseCase: DeleteTaskLocalDbUseCase,
+    private val deleteTaskFirebaseUseCase: DeleteTaskFirebaseUseCase,
     private val logoutFromAccountUseCase: LogoutFromAccountUseCase,
     private val checkConnectionUseCase: CheckConnectionUseCase,
-    private val updateTaskUseCase: UpdateTaskUseCase
+    private val updateTaskLocalDbUseCase: UpdateTaskLocalDbUseCase,
+    private val updateTaskFirebaseUseCase: UpdateTaskFirebaseUseCase,
+    private val insertTaskFirebaseUseCase: InsertTaskFirebaseUseCase,
+    private val insertTaskLocalDbUseCase: InsertTaskLocalDbUseCase,
+    private val transferTasksUseCase: TransferTasksUseCase,
+    private val applicationContext: Context
 ) : ViewModel() {
 
     private val _todayList = MutableLiveData<List<Task>>()
@@ -43,92 +60,131 @@ class MainViewModel @Inject constructor(
     val tomorrowList: LiveData<List<Task>>
         get() = _tomorrowList
 
+
+    private val _state = MutableLiveData<MainState>()
+    val state: LiveData<MainState>
+        get() = _state
+
     @Inject
     lateinit var repository: TaskRepository
 
     @Inject
     lateinit var mapper: Mapper
 
-
-    private val _isLogoutSuccess = MutableLiveData<Boolean>()
-    val isLogoutSuccess: LiveData<Boolean>
-        get() = _isLogoutSuccess
-
     fun synchronizeData() {
         viewModelScope.launch {
             synchronizeDataUseCase.invoke()
         }
-
     }
 
-    fun updateTask(task: Task) {
-        val taskDb = mapper.entityToDbModel(task)
-        viewModelScope.launch {
-            updateTaskUseCase.invoke(taskDb)
-            Log.d("MYTAG", "updateTask $task")
+    init {
+        startWorkers()
+    }
 
-            val oldList = if (task.time == 0) {
-                _todayList.value?.toMutableList()
-            } else {
-                _tomorrowList.value?.toMutableList()
-            }
 
-            oldList?.let {
-                val oldPosition = it.indexOfFirst { it.id == task.id }
 
-                if (oldPosition != -1) {
-                    it[oldPosition] = task
+    private suspend fun sortTasksList(task: Task) {
+        val oldList = if (task.time <= 0) {
+            getTodayTasksUseCase.invoke().toMutableList()
+        } else {
+            getTomorrowTasksUseCase.invoke().toMutableList()
+        }
 
-                    // Пересортировать список
-                    val sortedList = it.sortedWith(
-                        compareBy<Task> {
-                            when (it.state) {
-                                TaskState.OverDue -> 0
-                                TaskState.None -> 1
-                                TaskState.Done -> 2
-                            }
-                        }.thenByDescending { it.priority }
-                    )
+        oldList.let { it ->
+            val oldPosition = it.indexOfFirst { it.id == task.id }
 
-                    if (task.time == 0) {
-                        _todayList.value = sortedList
-                    } else {
-                        _tomorrowList.value = sortedList
-                    }
+            if (oldPosition != -1) {
+                it[oldPosition] = task
+
+                val sortedList = it.sortedWith(
+                    compareBy<Task> {
+                        when {
+                            it.time < 0 && it.state == TaskState.None -> 0
+                            it.time >= 0 && it.state == TaskState.None -> 1
+                            it.state == TaskState.Done -> 2
+                            else -> 3
+                        }
+                    }.thenByDescending { it.priority }
+                )
+
+                if (task.time <= 0) {
+                    _todayList.value = sortedList
+                } else {
+                    _tomorrowList.value = sortedList
                 }
             }
         }
     }
 
+    fun transferTasks(){
+        viewModelScope.launch {
+            transferTasksUseCase.invoke()
+            getTodayTasks()
+            getTomorrowTasks()
+        }
+
+    }
+    private suspend fun sortAndGetTasksList(time: Int) {
+        val oldList = if (time <= 0) {
+            getTodayTasksUseCase.invoke().toMutableList()
+        } else {
+            getTomorrowTasksUseCase.invoke().toMutableList()
+        }
+        Log.d("Список", oldList.toString())
+
+        val sortedList = oldList.sortedWith(
+            compareBy<Task> {
+                when {
+                    it.time < 0 && it.state == TaskState.None -> 0
+                    it.time >= 0 && it.state == TaskState.None -> 1
+                    it.state == TaskState.Done -> 2
+                    else -> 3
+                }
+            }.thenByDescending { it.priority }
+        )
+
+        Log.d("Список", sortedList.toString())
+
+        if (time <= 0) {
+            _todayList.value = sortedList
+        } else {
+            _tomorrowList.value = sortedList
+        }
+    }
+
+
+    fun updateTask(task: Task) {
+        val taskDb = mapper.entityToDbModel(task)
+        viewModelScope.launch {
+            updateTaskLocalDbUseCase.invoke(taskDb)
+            sortTasksList(task)
+            updateTaskFirebaseUseCase.invoke(taskDb)
+        }
+    }
+
+
     fun logout() {
         if (checkConnectionUseCase.invoke()) {
             viewModelScope.launch {
-                // Синхронизация данных
-                val syncJob = launch {
-                    synchronizeDataUseCase.invoke()
-                }
-                syncJob.join() // Ждем завершения синхронизации данных
+                _state.value = MainState.Loading
+                synchronizeDataUseCase.invoke()
 
-                // Удаление данных
-                val deleteJob = launch {
-                    deleteAllUseCase.invoke()
-                }
-                deleteJob.join() // Ждем завершения удаления данных
+                deleteAllUseCase.invoke()
 
-                // Выход из аккаунта
                 logoutFromAccountUseCase.invoke()
 
-                _isLogoutSuccess.value = true
+                _state.value = MainState.LogoutSuccess
             }
         } else {
-            _isLogoutSuccess.value = false
+            _state.value = MainState.LogoutError
         }
     }
 
     fun deleteTask(task: Task) {
         viewModelScope.launch {
-            deleteTaskUseCase.invoke(mapper.entityToDbModel(task))
-            if (task.time == 0) {
+            deleteTaskLocalDbUseCase.invoke(mapper.entityToDbModel(task))
+            deleteTaskFirebaseUseCase.invoke(mapper.entityToDbModel(task))
+            if (task.time <= 0) {
                 getTodayTasks()
             } else {
                 getTomorrowTasks()
@@ -139,66 +195,116 @@ class MainViewModel @Inject constructor(
 
     fun getTodayTasks() {
         viewModelScope.launch {
-            val list = withContext(Dispatchers.IO) {
-                getTodayTasksUseCase.invoke()
-            }
-            Log.d("MYTAG", "Обновление сегодня")
-
-            _todayList.value = list.sortedWith(
-                compareBy<Task> {
-                    when (it.state) {
-                        TaskState.OverDue -> 0
-                        TaskState.None -> 1
-                        TaskState.Done -> 2
-                    }
-                }.thenByDescending { it.priority }
-            )
+            _state.value = MainState.Loading
+            sortAndGetTasksList(0)
+            _state.value = MainState.Success
         }
     }
 
     fun getTasksFromFirebase() {
         viewModelScope.launch {
+            _state.value = MainState.Loading
             fetchTasksFromFirebaseUseCase.invoke()
             getTodayTasks()
             getTomorrowTasks()
+            _state.value = MainState.Success
         }
     }
 
     fun getTomorrowTasks() {
         viewModelScope.launch {
-            val list = withContext(Dispatchers.IO) {
-                getTomorrowTasksUseCase.invoke()
-            }
-            Log.d("MYTAG", "Обновление завтра")
-            _tomorrowList.value = list.sortedWith(
-                compareByDescending<Task> { it.priority }
-                    .thenBy { it.state == TaskState.Done }
-            )
+            _state.value = MainState.Loading
+            sortAndGetTasksList(1)
+            _state.value = MainState.Success
         }
     }
 
     fun addNewTask(task: Task) {
         viewModelScope.launch {
-            val addTaskJob = launch {
-                try {
-                    withContext(Dispatchers.IO) {
-                        val taskDb = mapper.entityToDbModel(task)
-                        repository.insertTask(taskDb)
-                    }
-                    Log.d("MYTAG", "Добавление закончилось")
-                } catch (e: Exception) {
-                    Log.e("MYTAG", "Ошибка при добавлении задачи: ${e.message}")
-                }
-            }
-            addTaskJob.join()
+            Log.d("MYTAG", task.toString())
+            val id = insertTaskLocalDbUseCase.invoke(mapper.entityToDbModel(task))
             if (task.time == 0) {
                 getTodayTasks()
             }
             if (task.time == 1) {
                 getTomorrowTasks()
             }
+            insertTaskFirebaseUseCase.invoke(mapper.entityToDbModel(task), id)
         }
     }
+
+    private fun startWorkers() {
+        val notificationWorkRequestTag = "notificationWork"
+        val taskTransferWorkRequestTag = "taskTransferWork"
+
+        val notificationHour = 22 // Часы для отправки уведомления (0-23)
+        val taskTransferHour = 0 // Часы для запуска трансфер воркера (0-23)
+        val repeatIntervalHours = 24 // Периодичность выполнения в часах
+
+        val currentTimeMillis = System.currentTimeMillis()
+
+        val notificationCalendar = Calendar.getInstance()
+        notificationCalendar.timeInMillis = currentTimeMillis
+        notificationCalendar.set(Calendar.HOUR_OF_DAY, notificationHour)
+        notificationCalendar.set(Calendar.MINUTE, 0)
+        notificationCalendar.set(Calendar.SECOND, 0)
+
+        val taskTransferCalendar = Calendar.getInstance()
+        taskTransferCalendar.timeInMillis = currentTimeMillis
+        taskTransferCalendar.set(Calendar.HOUR_OF_DAY, taskTransferHour)
+        taskTransferCalendar.set(Calendar.MINUTE, 0)
+        taskTransferCalendar.set(Calendar.SECOND, 0)
+
+        // Вычисляем задержку для уведомлений, если желаемое время уже прошло,
+        // считаем время начала на следующий день.
+        val notificationInitialDelayMillis =
+            if (notificationCalendar.timeInMillis <= currentTimeMillis) {
+                notificationCalendar.add(Calendar.DAY_OF_YEAR, 1) // Прибавляем 1 день
+                notificationCalendar.timeInMillis - currentTimeMillis
+            } else {
+                notificationCalendar.timeInMillis - currentTimeMillis
+            }
+
+        // Вычисляем задержку для трансфер воркера, если желаемое время уже прошло,
+        // считаем время начала на следующий день.
+        val taskTransferInitialDelayMillis =
+            if (taskTransferCalendar.timeInMillis <= currentTimeMillis) {
+                taskTransferCalendar.add(Calendar.DAY_OF_YEAR, 1) // Прибавляем 1 день
+                taskTransferCalendar.timeInMillis - currentTimeMillis
+            } else {
+                taskTransferCalendar.timeInMillis - currentTimeMillis
+            }
+
+        val notificationWorkRequest = PeriodicWorkRequestBuilder<NotificationWorker>(
+            repeatIntervalHours.toLong(), // Периодичность выполнения в часах
+            TimeUnit.HOURS // Единица измерения периода (часы)
+        )
+            .setInitialDelay(notificationInitialDelayMillis, TimeUnit.MILLISECONDS)
+            .addTag(notificationWorkRequestTag) // Устанавливаем уникальный тег для этого воркера
+            .build()
+
+        val taskTransferWorkRequest = PeriodicWorkRequestBuilder<TaskTransferWorker>(
+            repeatIntervalHours.toLong(), // Периодичность выполнения в часах
+            TimeUnit.HOURS // Единица измерения периода (часы)
+        )
+            .setInitialDelay(taskTransferInitialDelayMillis, TimeUnit.MILLISECONDS)
+            .addTag(taskTransferWorkRequestTag) // Устанавливаем уникальный тег для этого воркера
+            .build()
+
+        WorkManager.getInstance(applicationContext).enqueueUniquePeriodicWork(
+            "uniqueNotificationWork", // Уникальное имя работы
+            ExistingPeriodicWorkPolicy.REPLACE, // Перезапускаем работу с уникальным тегом, если она уже существует
+            notificationWorkRequest
+        )
+
+        WorkManager.getInstance(applicationContext).enqueueUniquePeriodicWork(
+            "uniqueTaskTransferWork", // Уникальное имя работы
+            ExistingPeriodicWorkPolicy.REPLACE, // Перезапускаем работу с уникальным тегом, если она уже существует
+            taskTransferWorkRequest
+        )
+    }
+
+
 
     fun dpToPx(dp: Int): Int {
         return mapper.dpToPx(dp)

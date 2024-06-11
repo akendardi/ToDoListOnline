@@ -1,17 +1,23 @@
 package com.example.todolistonline.presentation.main
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.example.todolistonline.ToDoListOnlineApp
 import com.example.todolistonline.databinding.ActivityMainBinding
 import com.example.todolistonline.presentation.ViewModelFactory
 import com.example.todolistonline.presentation.login.LoginActivity
-import com.example.todolistonline.presentation.main.fragments.task_fragment.TaskFragment
+import com.example.todolistonline.presentation.main.fragments.TaskFragment
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayout.OnTabSelectedListener
 import com.google.android.material.tabs.TabLayoutMediator
@@ -36,23 +42,48 @@ class MainActivity :
     @Inject
     lateinit var viewModelFactory: ViewModelFactory
 
+
+    private val REQUEST_CODE_NOTIFICATION_PERMISSION = 1
     private val viewModel: MainViewModel by viewModels { viewModelFactory }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         component.inject(this)
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
+        isFirstStart()
+        startViewPager()
+        listeners()
+        observeViewModel()
+        checkNotificationPermissions()
+    }
+
+
+    private fun isFirstStart() {
         val isFirst = intent.getBooleanExtra(FLAG_TAG, false)
         Log.d("MYTAG", isFirst.toString())
-        if (isFirst){
+        if (isFirst) {
             viewModel.getTasksFromFirebase()
         } else {
             viewModel.synchronizeData()
         }
-        startViewPager()
-        listeners()
-        observeViewModel()
     }
+
+    private fun checkNotificationPermissions() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                    REQUEST_CODE_NOTIFICATION_PERMISSION
+                )
+            }
+        }
+    }
+
 
     private fun startViewPager() {
         binding.tabLayout.isTabIndicatorFullWidth = true
@@ -70,7 +101,6 @@ class MainActivity :
             override fun onTabSelected(tab: TabLayout.Tab?) {
                 tab?.let {
                     selectedTab = it.position
-                    Log.d("MYTAG", selectedTab.toString())
                 }
             }
 
@@ -91,18 +121,54 @@ class MainActivity :
         binding.logout.setOnClickListener {
             viewModel.logout()
         }
+        binding.update.setOnClickListener {
+            viewModel.transferTasks()
+        }
     }
 
-    private fun observeViewModel(){
-        viewModel.isLogoutSuccess.observe(this){
-            if (it){
-                Toast.makeText(this, "Вышел из аккаунта", Toast.LENGTH_SHORT).show()
-                startActivity(LoginActivity.newIntent(this))
-                finish()
-            } else {
-                Toast.makeText(this, "Не вышел из аккаунта", Toast.LENGTH_SHORT).show()
+    private fun observeViewModel() {
+        viewModel.state.observe(this) {
+            when (it) {
+                is MainState.GetTasksFromFirebaseError -> {
+                    Toast.makeText(this, "Ошибка подключения. Невозможно загрузить данные с удаленного сервера", Toast.LENGTH_SHORT).show()
+                    offLoading()
+                }
+                is MainState.Loading -> {
+                    onLoading()
+                }
+                is MainState.LogoutError -> {
+                    Toast.makeText(this, "Ошибка подключения. Проверьте подключение к интернету и повторите позже", Toast.LENGTH_SHORT).show()
+                    offLoading()
+                }
+                is MainState.LogoutSuccess -> {
+                    startLoginActivity()
+                }
+                is MainState.Success -> {
+                    offLoading()
+                }
             }
         }
+    }
+
+    private fun offLoading(){
+        binding.progressBar.visibility = View.GONE
+        binding.tabLayout.isActivated = false
+        binding.fabAddTask.isActivated = false
+        binding.logout.isActivated = false
+        binding.update.isActivated = false
+    }
+
+    private fun onLoading(){
+        binding.progressBar.visibility = View.VISIBLE
+        binding.tabLayout.isActivated = true
+        binding.fabAddTask.isActivated = true
+        binding.logout.isActivated = true
+        binding.update.isActivated = true
+    }
+
+    private fun startLoginActivity(){
+        startActivity(LoginActivity.newIntent(this))
+        finish()
     }
 
     override fun onTabSelected(p0: TabLayout.Tab?) {
@@ -116,7 +182,6 @@ class MainActivity :
     override fun onTabReselected(p0: TabLayout.Tab?) {
         TODO("Not yet implemented")
     }
-
 
 
     companion object {

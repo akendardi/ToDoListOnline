@@ -4,8 +4,8 @@ import com.example.todolistonline.data.entities.TaskDbModel
 import com.example.todolistonline.domain.TaskRepository
 import javax.inject.Inject
 
-class DeleteTaskUseCase @Inject constructor(
+class DeleteTaskFirebaseUseCase @Inject constructor(
     private val repository: TaskRepository
 ) {
-    suspend operator fun invoke(task: TaskDbModel) = repository.deleteTask(task)
+    suspend operator fun invoke(task: TaskDbModel) = repository.deleteTaskFirebase(task)
 }

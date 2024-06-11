@@ -47,7 +47,12 @@
             android:windowSoftInputMode="adjustResize">
 
         </activity>
-        <receiver android:name=".StartAtMidnightReceiver" />
+
+        <provider
+            android:authorities="androidx.work.WorkManagerInitializer"
+            android:name="androidx.startup.InitializationProvider"
+            tools:replace="android:authorities"
+            tools:node = "remove"/>
     </application>
 
 </manifest>

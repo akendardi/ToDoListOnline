@@ -47,7 +47,7 @@ dependencies {
     //Dagger 2
     implementation("com.google.dagger:dagger:2.51.1")
     kapt("com.google.dagger:dagger-compiler:2.51.1")
-    implementation ("androidx.activity:activity-ktx:1.6.0")
+    implementation ("androidx.activity:activity-ktx:1.9.0")
 
     //Firebase
     implementation(platform("com.google.firebase:firebase-bom:33.0.0"))
@@ -64,10 +64,10 @@ dependencies {
     implementation ("com.google.android.material:material:1.8.0")
 
     //Room
-    implementation ("androidx.room:room-runtime:2.5.0")
-    implementation ("androidx.room:room-ktx:2.5.0")
-    kapt ("androidx.room:room-compiler:2.5.0")
-    implementation ("androidx.room:room-testing:2.5.1")
+    implementation ("androidx.room:room-runtime:2.6.1")
+    implementation ("androidx.room:room-ktx:2.6.1")
+    kapt ("androidx.room:room-compiler:2.6.1")
+    implementation ("androidx.room:room-testing:2.6.1")
 
 
     implementation ("androidx.core:core-ktx:1.6.0")
@@ -75,8 +75,7 @@ dependencies {
     implementation ("androidx.fragment:fragment-ktx:1.3.5")
 
 
-    val work_version = "2.7.0"
-    implementation ("androidx.work:work-runtime-ktx:$work_version")
+    implementation ("androidx.work:work-runtime-ktx:2.7.1")
 
 
 

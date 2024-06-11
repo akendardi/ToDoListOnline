@@ -4,6 +4,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CheckBox
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.ListAdapter
@@ -24,7 +25,6 @@ class TasksAdapter(private val onItemClickListener: OnItemClickListener) :
         val task = getItem(position)
         holder.title.text = task.title
 
-        // Установка состояния CheckBox без вызова слушателя
         holder.checkBox.setOnCheckedChangeListener(null)
         holder.checkBox.isChecked = task.state == TaskState.Done
 
@@ -34,16 +34,11 @@ class TasksAdapter(private val onItemClickListener: OnItemClickListener) :
             onItemClickListener.onItemClick(task)
         }
 
-        // Установка слушателя CheckBox
         holder.checkBox.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) {
                 task.state = TaskState.Done
             } else {
-                if (task.time >= 0) {
-                    task.state = TaskState.None
-                } else {
-                    task.state = TaskState.OverDue
-                }
+                task.state = TaskState.None
             }
             onItemClickListener.onItemStateChanged(task)
             notifyItemChanged(holder.adapterPosition) // Уведомление об изменении элемента
@@ -59,23 +54,14 @@ class TasksAdapter(private val onItemClickListener: OnItemClickListener) :
                     ContextCompat.getColor(holder.itemView.context, R.color.lowPriorityColor)
                 if (task.state == TaskState.Done) {
                     colorView = ContextCompat.getColor(holder.itemView.context, R.color.lowDone)
-                } else if (task.state == TaskState.OverDue) {
-                    colorView = ContextCompat.getColor(
-                        holder.itemView.context,
-                        R.color.defaultPriorityColor
-                    )
                 }
+
             }
             1 -> {
                 colorLine =
                     ContextCompat.getColor(holder.itemView.context, R.color.mediumPriorityColor)
                 if (task.state == TaskState.Done) {
                     colorView = ContextCompat.getColor(holder.itemView.context, R.color.mediumDone)
-                } else if (task.state == TaskState.OverDue) {
-                    colorView = ContextCompat.getColor(
-                        holder.itemView.context,
-                        R.color.defaultPriorityColor
-                    )
                 }
             }
             2 -> {
@@ -83,11 +69,6 @@ class TasksAdapter(private val onItemClickListener: OnItemClickListener) :
                     ContextCompat.getColor(holder.itemView.context, R.color.highPriorityColor)
                 if (task.state == TaskState.Done) {
                     colorView = ContextCompat.getColor(holder.itemView.context, R.color.highDone)
-                } else if (task.state == TaskState.OverDue) {
-                    colorView = ContextCompat.getColor(
-                        holder.itemView.context,
-                        R.color.defaultPriorityColor
-                    )
                 }
             }
             else -> {
@@ -95,11 +76,16 @@ class TasksAdapter(private val onItemClickListener: OnItemClickListener) :
                     ContextCompat.getColor(holder.itemView.context, R.color.defaultPriorityColor)
             }
         }
-        holder.itemView.setBackgroundColor(colorView)
+        if (task.time < 0){
+            colorView = ContextCompat.getColor(holder.itemView.context, R.color.defaultPriorityColor)
+        }
+        holder.linearLayout.setBackgroundColor(colorView)
         holder.startLine.setBackgroundColor(colorLine)
+
     }
 
     class TaskViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        val linearLayout: LinearLayout = itemView.findViewById(R.id.ll_item)
         val title: TextView = itemView.findViewById(R.id.title_item)
         val checkBox: CheckBox = itemView.findViewById(R.id.checkbox_item)
         val startLine: View = itemView.findViewById(R.id.startline_item)

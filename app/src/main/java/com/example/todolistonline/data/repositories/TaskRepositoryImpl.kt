@@ -28,13 +28,65 @@ class TaskRepositoryImpl @Inject constructor(
 ) :
     TaskRepository {
 
-    override suspend fun getAllTasks(): List<Task> {
-        return taskDao.getAllTasks().map { mapper.dbModelToEntity(it) }
+    override suspend fun insertTaskLocalDb(task: TaskDbModel): Long {
+        return withContext(Dispatchers.IO) {
+            taskDao.insert(task)
+        }
     }
 
-    override suspend fun updateTask(task: TaskDbModel) {
-        withContext(Dispatchers.IO){
+    override suspend fun insertTaskFirebase(task: TaskDbModel, id: Long) {
+        if (isNetworkAvailable()) {
+            try {
+                Log.d("PIZDA", task.toString())
+                val usersRef = firebaseDatabase.getReference("users")
+                val currentUser = FirebaseAuth.getInstance().currentUser
+                val uid = currentUser?.uid
+
+                uid?.let {
+                    usersRef.child(it).child(id.toString()).setValue(task)
+                }
+                Log.d("MYTAG", "Данные пользователя сохранены удаленно")
+
+            } catch (e: IOException) {
+                Log.e("MYTAG", "Ошибка сохранения данных пользователя: ${e.message}")
+            } catch (e: TimeoutCancellationException) {
+                Log.e("MYTAG", "Превышено время ожидания загрузки данных")
+            }
+        }
+    }
+
+
+    override suspend fun deleteTaskFirebase(task: TaskDbModel) {
+        withContext(Dispatchers.IO) {
+            try {
+                val currentUser = auth.currentUser
+                val uid = currentUser?.uid
+
+                if (uid != null) {
+                    val usersRef =
+                        firebaseDatabase.getReference("users").child(uid).child(task.id.toString())
+                    usersRef.removeValue().await()
+                    Log.d("MYTAG", "Задача успешно удалена из Firebase")
+                } else {
+                    Log.e(
+                        "MYTAG",
+                        "Пользователь не авторизован, задача не может быть удалена из Firebase"
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e("MYTAG", "Ошибка удаления задачи: ${e.message}")
+            }
+        }
+    }
+
+    override suspend fun updateTaskLocalDb(task: TaskDbModel) {
+        withContext(Dispatchers.IO) {
             taskDao.updateTask(task)
+        }
+    }
+
+    override suspend fun updateTaskFirebase(task: TaskDbModel) {
+        withContext(Dispatchers.IO) {
             val usersRef = firebaseDatabase.getReference("users")
             val currentUser = FirebaseAuth.getInstance().currentUser
             val uid = currentUser?.uid
@@ -45,6 +97,13 @@ class TaskRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getAllTasks(): List<Task> {
+        return withContext(Dispatchers.IO) {
+            taskDao.getAllTasks().map { mapper.dbModelToEntity(it) }
+        }
+    }
+
+
     override suspend fun deleteAll() {
         withContext(Dispatchers.IO) {
             taskDao.deleteAll()
@@ -53,110 +112,78 @@ class TaskRepositoryImpl @Inject constructor(
     }
 
     override suspend fun synchronizeData() {
-        val currentUser = auth.currentUser
-        val uid = currentUser?.uid
+        withContext(Dispatchers.IO) {
+            val currentUser = auth.currentUser
+            val uid = currentUser?.uid
 
-        if (uid != null) {
-            try {
-                val usersRef = firebaseDatabase.getReference("users").child(uid)
-                withContext(Dispatchers.IO) {
+            if (uid != null) {
+                try {
+                    val usersRef = firebaseDatabase.getReference("users").child(uid)
                     val localTasks = taskDao.getAllTasks()
                     usersRef.removeValue().await()
 
-                    // Добавить все локальные задачи в Firebase
                     for (task in localTasks) {
                         usersRef.child(task.id.toString()).setValue(task).await()
                     }
+
+                    Log.d("MYTAG", "Firebase обновлен из локальной базы данных")
+                } catch (e: Exception) {
+                    Log.e("MYTAG", "Ошибка при обновлении Firebase из локальной базы данных", e)
                 }
-
-                // Удалить все существующие задачи в Firebase
-
-
-                Log.d("MYTAG", "Firebase обновлен из локальной базы данных")
-            } catch (e: Exception) {
-                Log.e("MYTAG", "Ошибка при обновлении Firebase из локальной базы данных", e)
+            } else {
+                Log.e("MYTAG", "Пользователь не аутентифицирован")
             }
-        } else {
-            Log.e("MYTAG", "Пользователь не аутентифицирован")
         }
     }
 
     override suspend fun getTodayTasks(): List<Task> {
-        val list = taskDao.getTodayTasks().toMutableList()
-        return list.map { mapper.dbModelToEntity(it) }
+        return withContext(Dispatchers.IO) {
+            val list = taskDao.getTodayTasks().toMutableList()
+            list.map { mapper.dbModelToEntity(it) }
+        }
     }
 
     override suspend fun getTomorrowTasks(): List<Task> {
-        return taskDao.getTomorrowTasks().map { mapper.dbModelToEntity(it) }
+        return withContext(Dispatchers.IO) {
+            taskDao.getTomorrowTasks().map { mapper.dbModelToEntity(it) }
+        }
     }
 
     override suspend fun fetchTasksFromFirebase() {
-        val currentUser = auth.currentUser
-        val uid = currentUser?.uid
 
-        if (uid != null) {
-            try {
-                val usersRef = firebaseDatabase.getReference("users").child(uid)
-                val snapshot = usersRef.get().await()
+        withContext(Dispatchers.IO) {
+            val currentUser = auth.currentUser
+            val uid = currentUser?.uid
 
-                val tasks = snapshot.children.mapNotNull { it.getValue(TaskDbModel::class.java) }
+            if (uid != null) {
+                try {
+                    val usersRef = firebaseDatabase.getReference("users").child(uid)
+                    val snapshot = usersRef.get().await()
 
-                val sortedTasks = tasks.sortedWith(
-                    compareByDescending<TaskDbModel> { it.priority }
-                        .thenBy { it.state == TaskState.Done }
-                )
+                    val tasks =
+                        snapshot.children.mapNotNull { it.getValue(TaskDbModel::class.java) }
 
-                // Убедитесь, что операция с базой данных выполняется на IO потоке
-                withContext(Dispatchers.IO) {
-                    taskDao.insertAll(sortedTasks)
+                    taskDao.insertAll(tasks)
+
+
+                    Log.d(
+                        "MYTAG",
+                        "Задачи успешно получены из Firebase и сохранены в локальную базу данных"
+                    )
+                } catch (e: Exception) {
+                    Log.e("MYTAG", "Ошибка при получении задач из Firebase", e)
                 }
-
-                Log.d("MYTAG", "Задачи успешно получены из Firebase и сохранены в локальную базу данных")
-            } catch (e: Exception) {
-                Log.e("MYTAG", "Ошибка при получении задач из Firebase", e)
+            } else {
+                Log.e("MYTAG", "Пользователь не аутентифицирован")
             }
-        } else {
-            Log.e("MYTAG", "Пользователь не аутентифицирован")
         }
     }
 
 
-
-    override suspend fun insertTask(task: TaskDbModel): Boolean {
-        // Проверяем наличие интернет-соединения
-        if (isNetworkAvailable()) {
-            try {
-                // Отправляем данные в удаленную базу данных Firebase
-                val taskId = taskDao.insert(task)
-                task.id = taskId
-                Log.d("MYTAG", taskId.toString())
-
-                val usersRef = firebaseDatabase.getReference("users")
-                val currentUser = FirebaseAuth.getInstance().currentUser
-                val uid = currentUser?.uid
-
-                uid?.let {
-                    usersRef.child(it).child(taskId.toString()).setValue(task)
-                }
-                Log.d("MYTAG", "Данные пользователя сохранены удаленно")
-                return true
-
-            } catch (e: IOException) {
-                Log.e("MYTAG", "Ошибка сохранения данных пользователя: ${e.message}")
-                return false
-            } catch (e: TimeoutCancellationException) {
-                Log.e("MYTAG", "Превышено время ожидания загрузки данных")
-                return false
-            }
-        } else {
-            taskDao.insert(task)
-            Log.d("MYTAG", "Данные пользователя сохранены локально")
-            return true
-        }
-    }
 
     private fun isNetworkAvailable(): Boolean {
-        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val connectivityManager =
+            context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val network = connectivityManager.activeNetwork
         val networkCapabilities = connectivityManager.getNetworkCapabilities(network)
         return networkCapabilities != null &&
@@ -166,24 +193,34 @@ class TaskRepositoryImpl @Inject constructor(
     }
 
 
-
-
-    override suspend fun deleteTask(task: TaskDbModel) {
+    override suspend fun deleteTaskLocalDb(task: TaskDbModel) {
         withContext(Dispatchers.IO) {
             taskDao.delete(task)
         }
-        val currentUser = auth.currentUser
-        val uid = currentUser?.uid
+    }
 
-        if (uid != null) {
-            val usersRef =
-                firebaseDatabase.getReference("users").child(uid).child(task.id.toString())
-            usersRef.removeValue().addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    Log.d("MYTAG", "Задача успешно удалена из Firebase")
-                } else {
-                    Log.e("MYTAG", "Ошибка удаления задачи из Firebase: ${task.exception?.message}")
+
+    override suspend fun transferTasks() {
+        withContext(Dispatchers.IO) {
+            try {
+                Log.d("MYTAG", "Начало выполнения transferTasks")
+
+                // Получаем все задачи
+                val tasks = getAllTasks().toMutableList()
+
+                // Удаляем все задачи
+                deleteAll()
+
+                // Переносим задачи с уменьшением времени
+                for (task in tasks) {
+                    if (task.state == TaskState.None) {
+                        task.time -= 1
+                        insertTaskLocalDb(mapper.entityToDbModel(task))
+                    }
                 }
+                Log.d("MYTAG", "Выполнение transferTasks завершено")
+            } catch (e: Exception) {
+                Log.e("MYTAG", "Ошибка при выполнении transferTasks", e)
             }
         }
     }
