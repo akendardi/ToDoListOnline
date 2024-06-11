@@ -124,6 +124,7 @@ class MainActivity :
         binding.update.setOnClickListener {
             viewModel.getTomorrowTasks()
             viewModel.getTodayTasks()
+
         }
     }
 
