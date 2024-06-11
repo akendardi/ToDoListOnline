@@ -1,4 +1,4 @@
-package com.example.todolistonline.presentation.main.fragments.task_fragment
+package com.example.todolistonline.presentation.main.fragments
 
 import android.os.Build
 import android.os.Bundle
@@ -43,6 +43,10 @@ class TaskFragment : DialogFragment() {
         component.inject(this)
         super.onCreate(savedInstanceState)
         setStyle(STYLE_NORMAL, R.style.ThemeOverlay_App_Dialog)
+        getParams()
+    }
+
+    private fun getParams(){
         arguments?.let {
             arguments?.let {
                 task = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -68,7 +72,6 @@ class TaskFragment : DialogFragment() {
         super.onViewCreated(view, savedInstanceState)
         setInfo()
         listeners()
-        Log.d("MYTAG", "$day $task $this")
     }
 
 
@@ -83,7 +86,7 @@ class TaskFragment : DialogFragment() {
 
     private fun listeners() {
         binding.buttonSave.setOnClickListener {
-            if (editTextContol()) {
+            if (editTextControl()) {
                 viewModel.addNewTask(createTask())
                 dismiss()
             }
@@ -101,7 +104,7 @@ class TaskFragment : DialogFragment() {
         }
     }
 
-    private fun editTextContol(): Boolean {
+    private fun editTextControl(): Boolean {
         var flag = true
         if (binding.etTask.text.toString().isEmpty()) {
             binding.etTaskL.layoutParams.height = viewModel.dpToPx(80)

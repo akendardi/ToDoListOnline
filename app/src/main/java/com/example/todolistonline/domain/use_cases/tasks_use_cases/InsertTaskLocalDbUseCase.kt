@@ -4,8 +4,8 @@ import com.example.todolistonline.data.entities.TaskDbModel
 import com.example.todolistonline.domain.TaskRepository
 import javax.inject.Inject
 
-class UpdateTaskUseCase @Inject constructor(
+class InsertTaskLocalDbUseCase @Inject constructor(
     private val repository: TaskRepository
 ) {
-     suspend operator fun invoke(task: TaskDbModel) = repository.updateTask(task)
+    suspend operator fun invoke(task: TaskDbModel) = repository.insertTaskLocalDb(task)
 }

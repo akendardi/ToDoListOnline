@@ -12,29 +12,29 @@ import com.example.todolistonline.data.entities.TaskDbModel
 interface TaskDao {
 
     @Query("SELECT * FROM tasks WHERE time <= 0")
-    fun getTodayTasks(): List<TaskDbModel>
+    suspend fun getTodayTasks(): List<TaskDbModel>
 
 
     @Query("SELECT * FROM tasks WHERE time = 1")
-    fun getTomorrowTasks(): List<TaskDbModel>
+    suspend fun getTomorrowTasks(): List<TaskDbModel>
 
     @Query("SELECT * FROM tasks")
-    fun getAllTasks(): List<TaskDbModel>
+    suspend fun getAllTasks(): List<TaskDbModel>
 
     @Query("DELETE FROM tasks")
-    fun deleteAll()
+    suspend fun deleteAll()
 
     @Update
-    fun updateTask(task: TaskDbModel)
+    suspend fun updateTask(task: TaskDbModel)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insert(taskDbModel: TaskDbModel): Long
+    suspend fun insert(taskDbModel: TaskDbModel): Long
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertAll(taskDbModels: List<TaskDbModel>)
+    suspend fun insertAll(taskDbModels: List<TaskDbModel>)
 
     @Delete
-    fun delete(taskDbModel: TaskDbModel)
+    suspend fun delete(taskDbModel: TaskDbModel)
 
     @Update
     fun update(taskDbModel: TaskDbModel)

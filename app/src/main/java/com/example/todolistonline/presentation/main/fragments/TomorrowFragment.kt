@@ -1,25 +1,21 @@
 package com.example.todolistonline.presentation.main.fragments
 
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.todolistonline.ToDoListOnlineApp
-import com.example.todolistonline.databinding.FragmentTodayBinding
 import com.example.todolistonline.databinding.FragmentTomorrowBinding
 import com.example.todolistonline.domain.Task
 import com.example.todolistonline.presentation.ViewModelFactory
 import com.example.todolistonline.presentation.main.MainViewModel
-import com.example.todolistonline.presentation.main.fragments.task_fragment.TaskFragment
 import com.example.todolistonline.presentation.main.recycler_view.OnItemClickListener
 import com.example.todolistonline.presentation.main.recycler_view.TasksAdapter
 import kotlinx.coroutines.launch
@@ -64,7 +60,7 @@ class TomorrowFragment : Fragment(), OnItemClickListener {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        loadData()
+        observeViewModel()
         lifecycleScope.launch {
             viewModel.getTomorrowTasks()
         }
@@ -100,9 +96,8 @@ class TomorrowFragment : Fragment(), OnItemClickListener {
         itemTouchHelper.attachToRecyclerView(binding.recyclerView)
     }
 
-    private fun loadData() {
+    private fun observeViewModel() {
         viewModel.tomorrowList.observe(viewLifecycleOwner){
-            Log.d("MYTAG", "OBSERVE TOMORROW ${it.size}")
             tasksAdapter.submitList(it)
         }
     }

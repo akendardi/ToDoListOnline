@@ -6,7 +6,6 @@ import com.example.todolistonline.di.ViewModelKey
 import com.example.todolistonline.presentation.ViewModelFactory
 import com.example.todolistonline.presentation.login.LoginViewModel
 import com.example.todolistonline.presentation.main.MainViewModel
-import com.example.todolistonline.presentation.main.fragments.task_fragment.TaskViewModel
 import com.example.todolistonline.presentation.registration.RegistrationViewModel
 import com.example.todolistonline.presentation.reset_password.ResetPasswordViewModel
 import dagger.Binds
@@ -35,11 +34,6 @@ interface ViewModelModule {
     @IntoMap
     @ViewModelKey(MainViewModel::class)
     fun provideMainViewModel(mainViewModel: MainViewModel): ViewModel
-
-    @Binds
-    @IntoMap
-    @ViewModelKey(TaskViewModel::class)
-    fun provideTaskViewModel(taskViewModel: TaskViewModel): ViewModel
 
     @Binds
     fun bindViewModelFactory(factory: ViewModelFactory): ViewModelProvider.Factory
