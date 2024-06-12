@@ -23,6 +23,7 @@ class NotificationWorker(
 
     override suspend fun doWork(): Result {
         return try {
+            Log.d("NotificationWorker", "Starting notification work")
             showNotification("Задания", "Не забудьте проверить ваши задания!")
             Result.success()
         } catch (e: Exception) {
