@@ -122,7 +122,9 @@ class MainActivity :
             viewModel.logout()
         }
         binding.update.setOnClickListener {
-            viewModel.transferTasks()
+            viewModel.getTomorrowTasks()
+            viewModel.getTodayTasks()
+
         }
     }
 

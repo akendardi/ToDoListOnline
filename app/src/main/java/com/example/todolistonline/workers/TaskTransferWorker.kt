@@ -16,6 +16,7 @@ class TaskTransferWorker(
 
 
     override suspend fun doWork(): Result {
+        Log.d("TaskTransferWorker", "Starting task transfer work")
         return try {
             Log.d("MYTAG", "START WORKER")
             transferTasksUseCase.invoke()

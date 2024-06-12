@@ -78,7 +78,7 @@ class MainViewModel @Inject constructor(
     }
 
     init {
-        startWorkers()
+        startWorkers(22, 0, 0, 1)
     }
 
 
@@ -116,14 +116,6 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun transferTasks(){
-        viewModelScope.launch {
-            transferTasksUseCase.invoke()
-            getTodayTasks()
-            getTomorrowTasks()
-        }
-
-    }
     private suspend fun sortAndGetTasksList(time: Int) {
         val oldList = if (time <= 0) {
             getTodayTasksUseCase.invoke().toMutableList()
@@ -233,12 +225,10 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    private fun startWorkers() {
+    private fun startWorkers(notificationHour: Int, notificationMinute: Int, taskTransferHour: Int, taskTransferMinute: Int) {
         val notificationWorkRequestTag = "notificationWork"
         val taskTransferWorkRequestTag = "taskTransferWork"
 
-        val notificationHour = 22 // Часы для отправки уведомления (0-23)
-        val taskTransferHour = 0 // Часы для запуска трансфер воркера (0-23)
         val repeatIntervalHours = 24 // Периодичность выполнения в часах
 
         val currentTimeMillis = System.currentTimeMillis()
@@ -246,13 +236,13 @@ class MainViewModel @Inject constructor(
         val notificationCalendar = Calendar.getInstance()
         notificationCalendar.timeInMillis = currentTimeMillis
         notificationCalendar.set(Calendar.HOUR_OF_DAY, notificationHour)
-        notificationCalendar.set(Calendar.MINUTE, 0)
+        notificationCalendar.set(Calendar.MINUTE, notificationMinute)
         notificationCalendar.set(Calendar.SECOND, 0)
 
         val taskTransferCalendar = Calendar.getInstance()
         taskTransferCalendar.timeInMillis = currentTimeMillis
         taskTransferCalendar.set(Calendar.HOUR_OF_DAY, taskTransferHour)
-        taskTransferCalendar.set(Calendar.MINUTE, 0)
+        taskTransferCalendar.set(Calendar.MINUTE, taskTransferMinute)
         taskTransferCalendar.set(Calendar.SECOND, 0)
 
         // Вычисляем задержку для уведомлений, если желаемое время уже прошло,
@@ -265,6 +255,9 @@ class MainViewModel @Inject constructor(
                 notificationCalendar.timeInMillis - currentTimeMillis
             }
 
+        // Логирование задержки для уведомлений
+        Log.d("WorkManager", "Notification initial delay: $notificationInitialDelayMillis ms")
+
         // Вычисляем задержку для трансфер воркера, если желаемое время уже прошло,
         // считаем время начала на следующий день.
         val taskTransferInitialDelayMillis =
@@ -274,6 +267,9 @@ class MainViewModel @Inject constructor(
             } else {
                 taskTransferCalendar.timeInMillis - currentTimeMillis
             }
+
+        // Логирование задержки для трансфер воркера
+        Log.d("WorkManager", "Task transfer initial delay: $taskTransferInitialDelayMillis ms")
 
         val notificationWorkRequest = PeriodicWorkRequestBuilder<NotificationWorker>(
             repeatIntervalHours.toLong(), // Периодичность выполнения в часах
@@ -291,11 +287,17 @@ class MainViewModel @Inject constructor(
             .addTag(taskTransferWorkRequestTag) // Устанавливаем уникальный тег для этого воркера
             .build()
 
+        // Логирование перед добавлением задачи для уведомлений в очередь
+        Log.d("WorkManager", "Enqueuing notification work with tag: $notificationWorkRequestTag")
+
         WorkManager.getInstance(applicationContext).enqueueUniquePeriodicWork(
             "uniqueNotificationWork", // Уникальное имя работы
             ExistingPeriodicWorkPolicy.REPLACE, // Перезапускаем работу с уникальным тегом, если она уже существует
             notificationWorkRequest
         )
+
+        // Логирование перед добавлением задачи для трансфера в очередь
+        Log.d("WorkManager", "Enqueuing task transfer work with tag: $taskTransferWorkRequestTag")
 
         WorkManager.getInstance(applicationContext).enqueueUniquePeriodicWork(
             "uniqueTaskTransferWork", // Уникальное имя работы
@@ -303,6 +305,8 @@ class MainViewModel @Inject constructor(
             taskTransferWorkRequest
         )
     }
+
+
 
 
 

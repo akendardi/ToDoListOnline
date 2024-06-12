@@ -12,6 +12,7 @@ import com.example.todolistonline.ToDoListOnlineApp
 import com.example.todolistonline.databinding.ActivityRegistrationBinding
 import com.example.todolistonline.domain.states.RegistrationState
 import com.example.todolistonline.presentation.ViewModelFactory
+import com.example.todolistonline.presentation.main.MainActivity
 import javax.inject.Inject
 
 class RegistrationActivity : AppCompatActivity() {
@@ -35,13 +36,12 @@ class RegistrationActivity : AppCompatActivity() {
         setContentView(binding.root)
         observeViewModel()
         binding.buttonRegistration.setOnClickListener {
-            checkEditText()
-            Log.d("Говноо", "buttonRegistration")
-            val name = binding.etLogin.text.toString().trim()
-            val email = binding.etEmail.text.toString().trim()
-            val password = binding.etPassword.text.toString().trim()
-            Log.d("Registration Tag", "$name $email $password")
-            viewModel.createAccount(email, password, name)
+            if (checkEditText()) {
+                val name = binding.etLogin.text.toString().trim()
+                val email = binding.etEmail.text.toString().trim()
+                val password = binding.etPassword.text.toString().trim()
+                viewModel.createAccount(email, password, name)
+            }
         }
 
     }
@@ -63,16 +63,25 @@ class RegistrationActivity : AppCompatActivity() {
                 is RegistrationState.Successful -> {
                     binding.progressBar.visibility = View.GONE
                     binding.blackBackground.visibility = View.GONE
+                    startActivity(MainActivity.newIntent(this, false))
                 }
 
                 is RegistrationState.InvalidEmail -> {
-                    Toast.makeText(this, "Хуйня емаил", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this,
+                        "Ошибка регистрации. Поменяйте данные и повторите позже",
+                        Toast.LENGTH_SHORT
+                    ).show()
                     binding.progressBar.visibility = View.GONE
                     binding.blackBackground.visibility = View.GONE
                 }
 
                 is RegistrationState.UserCollision -> {
-                    Toast.makeText(this, "Уже есть", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this,
+                        "Такой аккаунт уже есть. Зарегистрируйте аккаунт с другой почтой",
+                        Toast.LENGTH_SHORT
+                    ).show()
                     binding.progressBar.visibility = View.GONE
                     binding.blackBackground.visibility = View.GONE
                 }
@@ -102,10 +111,15 @@ class RegistrationActivity : AppCompatActivity() {
             binding.etPasswordL.layoutParams.height = viewModel.dpToPx(80)
             binding.etPasswordL.error = "Пароль не должен быть пустым"
             flag = false
+        } else if (binding.etPassword.text.toString().trim().length < 8) {
+            binding.etPasswordL.layoutParams.height = viewModel.dpToPx(80)
+            binding.etPasswordL.error = "Пароль меньше 8 символов"
+            flag = false
         } else {
             binding.etPasswordL.layoutParams.height = viewModel.dpToPx(70)
             binding.etPasswordL.error = null
         }
+
         return flag
     }
 
