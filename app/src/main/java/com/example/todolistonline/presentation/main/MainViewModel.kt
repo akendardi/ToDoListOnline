@@ -116,14 +116,6 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun transferTasks(){
-        viewModelScope.launch {
-            transferTasksUseCase.invoke()
-            getTodayTasks()
-            getTomorrowTasks()
-        }
-
-    }
     private suspend fun sortAndGetTasksList(time: Int) {
         val oldList = if (time <= 0) {
             getTodayTasksUseCase.invoke().toMutableList()
